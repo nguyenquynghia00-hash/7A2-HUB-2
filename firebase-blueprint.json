@@ -1,0 +1,306 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"] },
+        "isVip": { "type": "boolean", "description": "Whether the user is a VIP member" },
+        "vipExpiresAt": { "type": "string", "format": "date-time", "description": "When the VIP access expires" },
+        "vipCourseId": { "type": "string", "description": "The course ID associated with the VIP access" },
+        "vipActivationKey": { "type": "string", "description": "The activation key for VIP access" }
+      },
+      "required": ["uid", "displayName", "email"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A shared video, document, or presentation",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["video", "presentation", "document", "canva", "powerpoint", "gemini", "chatgpt", "gamma", "claude", "notebooklm"] },
+        "url": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "isVip": { "type": "boolean", "description": "Whether this post is for VIP members only" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "type", "url", "authorId", "authorName", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a post",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["postId", "authorId", "authorName", "text", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A message in the class group chat",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "authorName", "text", "createdAt"]
+    },
+    "ScheduleItem": {
+      "title": "Schedule Item",
+      "description": "A single lesson in the class schedule",
+      "type": "object",
+      "properties": {
+        "day": { "type": "string" },
+        "period": { "type": "integer" },
+        "subject": { "type": "string" },
+        "teacher": { "type": "string" },
+        "room": { "type": "string" },
+        "color": { "type": "string" }
+      },
+      "required": ["day", "period", "subject", "teacher", "room", "color"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "An item for sale in the class store",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "stock": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "description", "price", "imageUrl", "stock", "createdAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A purchase request from a student",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "shipped"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "productName", "customerId", "customerName", "customerEmail", "quantity", "totalPrice", "status", "createdAt"]
+    },
+    "Homework": {
+      "title": "Homework",
+      "description": "A homework assignment for the class",
+      "type": "object",
+      "properties": {
+        "subject": { "type": "string" },
+        "title": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+        "completedBy": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["subject", "title", "dueDate", "priority", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A real-time notification for all users",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["homework", "store", "general"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "message", "type", "createdAt"]
+    },
+    "UserPoints": {
+      "title": "User Points",
+      "description": "Reward points for a student",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "points": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "points", "updatedAt"]
+    },
+    "LearningProgress": {
+      "title": "Learning Progress",
+      "description": "Progress tracking for a student",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "postId": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "postId", "completed", "updatedAt"]
+    },
+    "Poll": {
+      "title": "Poll",
+      "description": "A class poll",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "options": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "authorId": { "type": "string" }
+      },
+      "required": ["question", "options", "createdAt", "authorId"]
+    },
+    "PollVote": {
+      "title": "Poll Vote",
+      "description": "A vote in a poll",
+      "type": "object",
+      "properties": {
+        "pollId": { "type": "string" },
+        "userId": { "type": "string" },
+        "optionIndex": { "type": "integer" }
+      },
+      "required": ["pollId", "userId", "optionIndex"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "A class exam or test",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "duration": { "type": "integer", "description": "Duration in minutes" },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" },
+              "options": { "type": "array", "items": { "type": "string" } },
+              "correctAnswer": { "type": "integer" }
+            }
+          }
+        },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "duration", "questions", "createdBy", "createdAt"]
+    },
+    "ExamResult": {
+      "title": "Exam Result",
+      "description": "A student's result for an exam",
+      "type": "object",
+      "properties": {
+        "examId": { "type": "string" },
+        "examTitle": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "score": { "type": "integer" },
+        "totalQuestions": { "type": "integer" },
+        "finishedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["examId", "examTitle", "userId", "userName", "score", "totalQuestions", "finishedAt"]
+    },
+    "MonthlyEvaluation": {
+      "title": "Monthly Evaluation",
+      "description": "A monthly review for a student from the admin",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "month": { "type": "string", "description": "Format: YYYY-MM" },
+        "content": { "type": "string" },
+        "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["userId", "userName", "month", "content", "rating", "createdAt", "createdBy"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Shared content"
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments on posts"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Class group chat messages"
+    },
+    "/schedule/{itemId}": {
+      "schema": "ScheduleItem",
+      "description": "Class schedule items"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Store products"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders"
+    },
+    "/homework/{homeworkId}": {
+      "schema": "Homework",
+      "description": "Homework assignments"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Real-time notifications"
+    },
+    "/userPoints/{userId}": {
+      "schema": "UserPoints",
+      "description": "User reward points"
+    },
+    "/learningProgress/{progressId}": {
+      "schema": "LearningProgress",
+      "description": "Student learning progress"
+    },
+    "/polls/{pollId}": {
+      "schema": "Poll",
+      "description": "Class polls"
+    },
+    "/polls/{pollId}/votes/{voteId}": {
+      "schema": "PollVote",
+      "description": "Poll votes"
+    },
+    "/exams/{examId}": {
+      "schema": "Exam",
+      "description": "Class exams"
+    },
+    "/exam_results/{resultId}": {
+      "schema": "ExamResult",
+      "description": "Exam results"
+    },
+    "/monthly_evaluations/{evaluationId}": {
+      "schema": "MonthlyEvaluation",
+      "description": "Monthly student evaluations"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Lớp 7A2 Hub",
+  "description": "Nền tảng học tập và kết nối cho lớp 7A2, nơi chia sẻ bài giảng, video và thảo luận trực tuyến.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "display-capture"
+  ]
+}

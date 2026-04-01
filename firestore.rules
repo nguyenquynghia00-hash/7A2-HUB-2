@@ -1,0 +1,345 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.email == "nguyenquynghia00@gmail.com" ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function isTech() {
+      return isAuthenticated() &&
+        (request.auth.token.email == "nqnghia2013@gmail.com" ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'tech'));
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'role']) &&
+             data.uid is string && data.uid.size() < 128 &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
+             data.role in ['admin', 'student', 'tech', 'user'] &&
+             (!('email' in data) || data.email is string) &&
+             (!('photoURL' in data) || data.photoURL is string) &&
+             (!('isVip' in data) || data.isVip is bool) &&
+             (!('vipExpiresAt' in data) || data.vipExpiresAt == null || data.vipExpiresAt is string) &&
+             (!('vipCourseId' in data) || data.vipCourseId is string) &&
+             (!('vipActivationKey' in data) || data.vipActivationKey is string) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
+    function isValidPost(data) {
+      return data.keys().hasAll(['title', 'type', 'url', 'authorId', 'authorName', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.type in ['video', 'presentation', 'document', 'canva', 'powerpoint', 'gemini', 'chatgpt', 'gamma', 'claude', 'notebooklm'] &&
+             data.url is string && data.url.size() > 0 &&
+             data.authorId is string &&
+             data.authorName is string &&
+             data.createdAt is timestamp &&
+             (!('isVip' in data) || data.isVip is bool);
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['postId', 'authorId', 'authorName', 'text', 'createdAt']) &&
+             data.postId is string &&
+             data.authorId is string &&
+             data.authorName is string &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['authorId', 'authorName', 'createdAt']) &&
+             data.authorId is string &&
+             data.authorName is string &&
+             (data.text is string || data.imageUrl is string || data.fileUrl is string) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidScheduleItem(data) {
+      return data.keys().hasAll(['day', 'period', 'subject', 'teacher', 'room', 'color']) &&
+             data.day is string &&
+             data.period is int &&
+             data.subject is string && data.subject.size() > 0 &&
+             data.teacher is string &&
+             data.room is string &&
+             data.color is string;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'description', 'price', 'imageUrl', 'stock', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 &&
+             data.description is string &&
+             data.price is number && data.price >= 0 &&
+             data.imageUrl is string &&
+             data.stock is int && data.stock >= 0 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['productId', 'productName', 'customerId', 'customerName', 'customerEmail', 'quantity', 'totalPrice', 'status', 'createdAt']) &&
+             data.productId is string &&
+             data.productName is string &&
+             data.customerId is string &&
+             data.customerName is string &&
+             data.customerEmail is string &&
+             data.quantity is int && data.quantity > 0 &&
+             data.totalPrice is number &&
+             data.status in ['pending', 'confirmed', 'shipped', 'cancelled'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidHomework(data) {
+      return data.keys().hasAll(['subject', 'title', 'dueDate', 'priority', 'createdAt']) &&
+             data.subject is string && data.subject.size() > 0 &&
+             data.title is string && data.title.size() > 0 &&
+             data.dueDate is string &&
+             data.priority in ['high', 'medium', 'low'] &&
+             data.createdAt is timestamp &&
+             (!('completedBy' in data) || data.completedBy is list);
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['title', 'message', 'type', 'createdAt']) &&
+             data.title is string &&
+             data.message is string &&
+             data.type in ['homework', 'store', 'general', 'course_registration'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidCourseRegistration(data) {
+      return data.keys().hasAll(['courseId', 'courseTitle', 'price', 'userId', 'name', 'email', 'phone', 'note', 'status', 'createdAt']) &&
+             data.courseId is string &&
+             data.courseTitle is string &&
+             data.price is string &&
+             data.userId is string &&
+             data.name is string &&
+             data.email is string &&
+             data.phone is string &&
+             data.note is string &&
+             data.status in ['pending', 'confirmed', 'rejected'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidUserNotification(data) {
+      return data.keys().hasAll(['userId', 'title', 'message', 'type', 'read', 'createdAt']) &&
+             data.userId is string && data.userId.size() < 128 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 2000 &&
+             data.type is string && data.type.size() < 100 &&
+             data.read is bool &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidUserPoints(data) {
+      return data.keys().hasAll(['userId', 'points', 'updatedAt']) &&
+             data.userId is string &&
+             data.points is int &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidLearningProgress(data) {
+      return data.keys().hasAll(['userId', 'postId', 'completed', 'updatedAt']) &&
+             data.userId is string &&
+             data.postId is string &&
+             data.completed is bool &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidPoll(data) {
+      return data.keys().hasAll(['question', 'options', 'createdAt', 'authorId']) &&
+             data.question is string && data.question.size() > 0 &&
+             data.options is list && data.options.size() > 0 &&
+             data.createdAt is timestamp &&
+             data.authorId is string;
+    }
+
+    function isValidPollVote(data) {
+      return data.keys().hasAll(['pollId', 'userId', 'optionIndex']) &&
+             data.pollId is string &&
+             data.userId is string &&
+             data.optionIndex is int;
+    }
+
+    function isValidExam(data) {
+      return data.keys().hasAll(['title', 'duration', 'questions', 'createdBy', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 &&
+             data.duration is int && data.duration > 0 &&
+             data.questions is list && data.questions.size() > 0 &&
+             data.createdBy is string &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidExamResult(data) {
+      return data.keys().hasAll(['examId', 'examTitle', 'userId', 'userName', 'score', 'totalQuestions', 'finishedAt']) &&
+             data.examId is string &&
+             data.examTitle is string &&
+             data.userId is string &&
+             data.userName is string &&
+             data.score is int &&
+             data.totalQuestions is int &&
+             data.finishedAt is timestamp;
+    }
+
+    function isValidMonthlyEvaluation(data) {
+      return data.keys().hasAll(['userId', 'userName', 'month', 'content', 'rating', 'createdAt', 'createdBy']) &&
+             data.userId is string &&
+             data.userName is string &&
+             data.month is string && data.month.matches("^\\d{4}-\\d{2}$") &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
+             data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+             data.createdAt is timestamp &&
+             data.createdBy is string;
+    }
+
+    // Rules
+    
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && ((isOwner(userId) && request.resource.data.role == 'student') || isAdmin() || isTech());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin() || isTech());
+      allow delete: if isAdmin() || isTech();
+    }
+    
+    match /posts/{postId} {
+      allow read: if isAuthenticated() && 
+                    (!('isVip' in resource.data) || resource.data.isVip == false || 
+                     (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isVip == true) || 
+                     isAdmin() || isTech());
+      allow create: if (isAdmin() || isTech()) && isValidPost(request.resource.data) && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthenticated() && isValidPost(request.resource.data) && (resource.data.authorId == request.auth.uid || isAdmin() || isTech());
+      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin() || isTech());
+      
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isValidComment(request.resource.data) && request.resource.data.authorId == request.auth.uid;
+        allow update: if isAuthenticated() && isValidComment(request.resource.data) && (resource.data.authorId == request.auth.uid || isAdmin() || isTech());
+        allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin() || isTech());
+      }
+    }
+    
+    match /messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidMessage(request.resource.data) && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthenticated() && isValidMessage(request.resource.data) && (resource.data.authorId == request.auth.uid || isAdmin() || isTech());
+      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin() || isTech());
+    }
+
+    match /schedule/{itemId} {
+      allow read: if isAuthenticated();
+      allow create, update: if (isAdmin() || isTech()) && isValidScheduleItem(request.resource.data);
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /products/{productId} {
+      allow read: if isAuthenticated();
+      allow create, update: if (isAdmin() || isTech()) && isValidProduct(request.resource.data);
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAdmin() || isTech() || (isAuthenticated() && resource.data.customerId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidOrder(request.resource.data) && request.resource.data.customerId == request.auth.uid && request.resource.data.status == 'pending';
+      allow update: if (isAdmin() || isTech()) || 
+                       (isAuthenticated() && resource.data.customerId == request.auth.uid && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) && 
+                        request.resource.data.status == 'cancelled' &&
+                        resource.data.status == 'pending');
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /homework/{homeworkId} {
+      allow read: if isAuthenticated();
+      allow create: if (isAdmin() || isTech()) && isValidHomework(request.resource.data);
+      allow update: if (isAdmin() || isTech()) && isValidHomework(request.resource.data) ||
+                       (isAuthenticated() && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completedBy']) &&
+                        isValidHomework(request.resource.data));
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow create: if ((isAdmin() || isTech()) && isValidNotification(request.resource.data)) || (isAuthenticated() && isValidNotification(request.resource.data) && request.resource.data.type in ['store', 'course_registration']);
+      allow update: if (isAdmin() || isTech()) && isValidNotification(request.resource.data);
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /course_registrations/{registrationId} {
+      allow read: if isAdmin() || isTech() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidCourseRegistration(request.resource.data) && request.resource.data.userId == request.auth.uid;
+      allow update: if (isAdmin() || isTech()) && isValidCourseRegistration(request.resource.data);
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /user_notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidUserNotification(request.resource.data) && (request.resource.data.userId == request.auth.uid || isAdmin() || isTech());
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) && request.resource.data.read == true;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /userPoints/{userId} {
+      allow list, get: if isAuthenticated();
+      allow create, update: if isAdmin() || isTech();
+      allow delete: if isAdmin();
+    }
+
+    match /learningProgress/{progressId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidLearningProgress(request.resource.data) && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidLearningProgress(request.resource.data);
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /polls/{pollId} {
+      allow read: if isAuthenticated();
+      allow create: if (isAdmin() || isTech()) && isValidPoll(request.resource.data);
+      allow update: if (isAdmin() || isTech()) && isValidPoll(request.resource.data);
+      allow delete: if isAdmin() || isTech();
+      
+      match /votes/{voteId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isValidPollVote(request.resource.data) && request.resource.data.userId == request.auth.uid;
+        allow update: if isAuthenticated() && isOwner(resource.data.userId) && isValidPollVote(request.resource.data);
+        allow delete: if isAdmin() || isTech();
+      }
+    }
+
+    match /exams/{examId} {
+      allow read: if isAuthenticated();
+      allow create, update: if (isAdmin() || isTech()) && isValidExam(request.resource.data);
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /exam_results/{resultId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidExamResult(request.resource.data) && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || isTech();
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /monthly_evaluations/{evaluationId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin() || isTech());
+      allow create, update: if (isAdmin() || isTech()) && isValidMonthlyEvaluation(request.resource.data);
+      allow delete: if isAdmin() || isTech();
+    }
+
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}
